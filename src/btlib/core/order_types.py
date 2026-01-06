@@ -1,8 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
-import yfinance as yf
-from datetime import datetime, timedelta
 # Force project root (the folder that contains /core) onto sys.path
 import pandas as pd
 import numpy as np
@@ -26,8 +24,10 @@ class Order:
         
     def __post_init__(self) -> None:
         object.__setattr__(self, "ts", pd.Timestamp(self.ts))
-        if self.ts is pd.NaT:
+        if pd.isna(self.ts):
             raise ValueError("ts must be a valid timestamp")
+
+
 
         if not isinstance(self.symbol, str) or not self.symbol.strip():
             raise ValueError("symbol must be a non-empty string")
@@ -61,8 +61,9 @@ class Fill:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "ts", pd.Timestamp(self.ts))
-        if self.ts is pd.NaT:
+        if pd.isna(self.ts):
             raise ValueError("ts must be a valid timestamp")
+
 
         if not isinstance(self.symbol, str) or not self.symbol.strip():
             raise ValueError("symbol must be a non-empty string")
@@ -118,8 +119,9 @@ class PortfolioState:
     def __post_init__(self) -> None:
         
         self.ts = pd.Timestamp(self.ts)
-        if self.ts is pd.NaT:
+        if pd.isna(self.ts):
             raise ValueError("ts must be a valid timestamp")
+
 
         require_finite("cash", float(self.cash))
 
@@ -172,5 +174,13 @@ class PortfolioState:
         equity = self.equity(mark_prices)
         leverage = gross_exposure / equity
         return leverage
-    
+    def unrealized_pnl(self, mark_prices: dict[str, float]):
+        total=0.0
+        for symbol, position in self.positions.items():
+            if symbol not in mark_prices:
+                raise KeyError(f"Missing mark price for {symbol}")
+            total+=position.unrealized_pnl(mark_prices[symbol])
+        return total
+    def realized_pnl(self) -> float:
+        return sum(pos.realized_pnl for pos in self.positions.values())
 
