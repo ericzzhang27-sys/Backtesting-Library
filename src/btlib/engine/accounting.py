@@ -31,6 +31,17 @@ def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
         closed=abs(fill.qty)
         realized_profit=closed*sign(qty_0)*(fill.price-price_0)-fill.fees-fill.slippage
         state.positions[fill.symbol].realized_pnl+=realized_profit
+        state.positions[fill.symbol].qty+=fill.qty
+        if state.positions[fill.symbol].qty==0:
+            state.positions[fill.symbol].avg_price=0
+    if sign(qty_0)!=sign(fill.qty) and abs(fill.qty)>abs(qty_0):
+        closed=abs(qty_0)
+        realized_profit=closed*sign(qty_0)*(fill.price-price_0)-fill.fees-fill.slippage
+        state.positions[fill.symbol].realized_pnl+=realized_profit
+        state.positions[fill.symbol].qty+=fill.qty
+        state.positions[fill.symbol].avg_price=fill.price
+    state.ts=fill.ts
+    return state
         
     
 
