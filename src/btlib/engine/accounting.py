@@ -40,6 +40,9 @@ def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
         state.positions[fill.symbol].qty+=fill.qty
         state.positions[fill.symbol].avg_price=fill.price
     state.ts=fill.ts
+    if close_enough_zero(state.positions[fill.symbol].qty):
+        state.positions[fill.symbol].qty=0
+        state.positions[fill.symbol].avg_price=0
     return state
 #Mark current state   
 def mark_to_market(state: PortfolioState, marks: dict[str,float]) -> dict:
