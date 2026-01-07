@@ -21,7 +21,7 @@ def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
     price_0=state.positions[fill.symbol].avg_price
     trade_cash=fill.qty*fill.price
     state.cash-=trade_cash+fill.fees+fill.slippage
-    if qty_0==0 or sign(fill.qty)==sign(qty_0): # Add/ Open
+    if close_enough_zero(qty_0) or sign(fill.qty)==sign(qty_0): # Add/ Open
         #Calculates new average price 
         new_avg_price=(qty_0*price_0+fill.qty*fill.price)/(qty_0+fill.qty)
         state.positions[fill.symbol].avg_price=new_avg_price
@@ -44,7 +44,7 @@ def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
 #Mark current state   
 def mark_to_market(state: PortfolioState, marks: dict[str,float]) -> dict:
     pf_summary={
-                "equity": state.equity,
+                "equity": state.equity(marks),
                 "gross_exposure" : state.gross_exposure(marks),
                 "net_exposure" : state.net_exposure(marks),
                 "unrealized_pnl": state.unrealized_pnl(marks),
