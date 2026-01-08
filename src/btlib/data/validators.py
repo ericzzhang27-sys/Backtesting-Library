@@ -12,40 +12,14 @@ def validate_price(df: pd.DataFrame) -> None:
         raise ValueError("Price data index must be sorted in ascending order")
     if df.index.has_duplicates:
         raise ValueError("Price data index must not contain duplicates")
-    if not {col: df[col].is_unique for col in df.columns}:
-        raise ValueError("Price data columns must not contain duplicate values")
-    if pd.api.types.is_numeric_dtype(df.dtypes):
+    if not df.columns.is_unique:
+        raise ValueError("Price data columns must be unique (no duplicate column names)")
+
+    if not all(pd.api.types.is_numeric_dtype(dt) for dt in df.dtypes):
         raise TypeError("All price data columns must be numeric dtype")
+
+
     if df.empty:
         raise ValueError("Price data DataFrame is empty")
 def require_columns(df: pd.DataFrame, required: list[str])-> None:
     pass
-class Market_Data:
-    def __init__(self,close:pd.DataFrame):
-        validate_price(close)
-        self.close=close.sort_index
-        self.close.columns=self.close.columns.astype(str)
-    def timestamps(self) -> pd.DatetimeIndex:
-        return self.close.index
-    def symbols(self) -> list[str]:
-        return self.close.columns.tolist()
-    def get_close(self, ts: pd.Timestamp) -> pd.Series:
-        ts=pd.Timestamp(ts)
-        if ts not in self.close.index:
-            raise KeyError(f"Timestamp {ts} not found in market data")
-        return self.close.loc[ts]
-    def get_price_dict(self, ts: pd.Timestamp) -> dict[str,float]:
-        get_close=self.get_close(ts)
-        return get_close.to_dict()
-    def slice_up_to(self, ts: pd.Timestamp) -> 'Market_Data':
-        ts=pd.Timestamp(ts)
-        
-        sliced_close=self.close.loc[:ts]
-        if sliced_close.empty:
-            raise ValueError(f"No market data available up to timestamp {ts}")
-        return Market_Data(sliced_close)
-    def tradeable_symbols(self, ts: pd.Timestamp) -> list[str]:
-        ts=pd.Timestamp(ts)
-        if ts not in self.close.index:
-            raise KeyError(f"Timestamp {ts} not found in market data")
-        return self.close.loc[ts].index.tolist()
