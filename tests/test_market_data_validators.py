@@ -1,12 +1,58 @@
 import pandas as pd
 import numpy as np
-from btlib.core.enums import Side, OrderType, OrderStatus
-from btlib.core.order_types import PortfolioState, Position, Fill, Order
-from btlib.engine.accounting import apply_fill, mark_to_market
-from btlib.data.validators import validate_price
-from btlib.data.MarketData import Market_Data
-symbol="AAPL"
-ts="2025-06-23"
-df=pd.DataFrame({symbol:[100,101,102]},index=pd.to_datetime(["2025-06-21","2025-06-22","2025-06-23"]))
-md=MarketData(close=df)
-print(md.get_close(ts))
+import pytest
+
+# Try normal package import first; fall back to repo-root import if needed.
+try:
+    from btlib.data.validators import validate_price_frame
+except Exception:  # pragma: no cover
+    import sys
+    from pathlib import Path
+    ROOT = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(ROOT / "src"))
+    from btlib.data.validators import validate_price_frame
+
+
+def _good_close_df() -> pd.DataFrame:
+    idx = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"])
+    return pd.DataFrame(
+        {
+            "AAPL": [100.0, 101.0, 102.0],
+            "MSFT": [200.0, 201.0, 202.0],
+        },
+        index=idx,
+    )
+
+
+def test_rejects_non_datetime_index() -> None:
+    df = _good_close_df()
+    df.index = [1, 2, 3]  # not a DatetimeIndex
+    with pytest.raises((TypeError, ValueError)):
+        validate_price_frame(df)
+
+
+def test_rejects_unsorted_index() -> None:
+    df = _good_close_df()
+    df = df.iloc[[1, 0, 2]]  # out of order
+    with pytest.raises((TypeError, ValueError)):
+        validate_price_frame(df)
+
+
+def test_rejects_duplicate_timestamps() -> None:
+    idx = pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"])
+    df = pd.DataFrame({"AAPL": [100.0, 101.0, 102.0]}, index=idx)
+    with pytest.raises((TypeError, ValueError)):
+        validate_price_frame(df)
+
+
+def test_rejects_non_numeric_column() -> None:
+    df = _good_close_df()
+    df["AAPL"] = ["x", "y", "z"]  # object dtype
+    with pytest.raises((TypeError, ValueError)):
+        validate_price_frame(df)
+
+
+def test_rejects_empty_df() -> None:
+    df = pd.DataFrame()
+    with pytest.raises((TypeError, ValueError)):
+        validate_price_frame(df)
