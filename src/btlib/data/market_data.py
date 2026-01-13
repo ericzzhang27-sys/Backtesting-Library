@@ -2,7 +2,7 @@ from btlib.data.validators import validate_price_frame
 import pandas as pd
 import numpy as np
 class MarketData:
-    def __init__(self,close:pd.DataFrame):
+    def __init__(self, close: pd.DataFrame):
         validate_price_frame(close)
         self.close=close.sort_index()
         self.close.columns=self.close.columns.astype(str)
