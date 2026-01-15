@@ -28,9 +28,10 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
         ledger_rows.append({"ts":ts, "cash": state.cash, "equity": state.equity(marks),
                     "gross_exposure": state.gross_exposure(marks),"net_exposure": state.net_exposure(marks),
                     "leverage": state.leverage(marks),"n_positions": len(state.positions)})
+        if ts<(market.timestamps()[0]+pd.Timedelta(days=cfg.warmup_bars)):
+            targets={}
     ledger=pd.DataFrame(ledger_rows).set_index("ts")
     targets=pd.DataFrame(targets_rows).set_index("ts")
-    if ts<(market.timestamps()[0]+pd.Timedelta(days=warmup_bars)):
-        targets={}
+    
     return BacktestResults(ledger=ledger,targets=targets)
         
