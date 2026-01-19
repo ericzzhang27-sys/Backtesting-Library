@@ -7,4 +7,5 @@ class BacktestConfig:
     warmup_bars: int = 0
     fail_on_missing_marks: bool = True
     max_abs_weight: float = 1.0
+    min_order_notional: float = 10.0 
  
