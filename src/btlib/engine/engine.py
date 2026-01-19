@@ -4,6 +4,7 @@ from btlib.data.market_data import MarketData
 from btlib.engine.strategy_base import Strategy
 from btlib.engine.config import BacktestConfig
 from btlib.core.order_types import PortfolioState
+from btlib.engine.rebalance import targets_to_orders
 @dataclass
 class BacktestResults:
     ledger: pd.DataFrame
@@ -16,6 +17,7 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
                          )
     ledger_rows=[]
     targets_rows=[]
+    order_log=[]
     symbols=market.symbols()
     for i, ts in enumerate(market.timestamps()):
         hist = market.slice_upto(ts)
@@ -31,26 +33,10 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
             targets = {}   
         else:
             targets = strategy.on_bar(ts, data_upto_ts=hist, state=state) or {}
-
-        if cfg.max_abs_weight is not None:
-            clipped = {}
-            for s, w in targets.items():
-                w = float(w)
-                if abs(w) > cfg.max_abs_weight:
-                    w = cfg.max_abs_weight if w > 0 else -cfg.max_abs_weight
-                clipped[s] = w
-            targets = clipped
-
+        
         targets_rows.append({"ts": ts, **{s: float(targets.get(s, 0.0)) for s in symbols}})
-
-        if cfg.fail_on_missing_marks:
-            for sym in state.positions.keys():
-                px = marks.get(sym, None)
-                if px is None or not pd.notna(px):
-                    raise ValueError(f"Missing mark for held position {sym} at {ts}")
-        for sym in targets:
-            if sym not in symbols:
-                raise ValueError(f"{sym} not found in market data")
+        current_orders=[targets_to_orders(ts, targets, state, marks, cfg)]
+        order_log.extend(current_orders)
         ledger_rows.append({
             "ts": ts,
             "cash": state.cash,
@@ -59,7 +45,9 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
             "net_exposure": state.net_exposure(marks),
             "leverage": state.leverage(marks),
             "n_positions": len(state.positions),
+            "orders": current_orders
         })
+
 
 
     ledger = pd.DataFrame(ledger_rows).set_index("ts")
