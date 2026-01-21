@@ -5,7 +5,7 @@ class BacktestConfig:
     initial_cash: float = 100_000
     allow_fractional_shares: bool = True
     warmup_bars: int = 0
-    fail_on_missing_marks: bool = True
+    fail_on_missing_marks: bool = False
     max_abs_weight: float = 1.0
     min_order_notional: float = 10.0 
  
