@@ -3,10 +3,11 @@ import pandas as pd
 from btlib.data.market_data import MarketData
 from btlib.engine.strategy_base import Strategy
 from btlib.engine.config import BacktestConfig
-from btlib.core.order_types import PortfolioState
+from btlib.core import PortfolioState, Fill
 from btlib.engine.rebalance import targets_to_orders
 from btlib.execution import ExecutionModel, NextCloseExecution
 from btlib.engine.accounting import apply_fill
+from btlib.costs import SimpleBpsCost, CostModel
 import numpy as np
 @dataclass
 class BacktestResults:
@@ -14,7 +15,14 @@ class BacktestResults:
     targets: pd.DataFrame
     orders: pd.DataFrame
     fills: pd.DataFrame
-def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConfig, execution_model: ExecutionModel | None = None) -> BacktestResults:
+def run_positions_only(
+        market: MarketData, 
+        strategy: Strategy, 
+        cfg: BacktestConfig, 
+        execution_model: ExecutionModel | None = None, 
+        cost_model: CostModel | None = None) -> BacktestResults:
+    
+
     if execution_model is None:
         execution_model = NextCloseExecution()
     ts0=market.timestamps()[0]
@@ -36,14 +44,20 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
         if i>0 and pending_orders:
             fills=execution_model.simulate_fills(ts,pending_orders,marks)
             for f in fills:
-                state = apply_fill(state,f)
+                if not cost_model:
+                    fees, slippage = 0.0, 0.0
+                else:
+                    fees, slippage= cost_model.compute(f)
+                f2= Fill(f.ts,f.symbol,f.qty,f.price,fees,slippage, getattr(f, "order_tag", None))
+                state = apply_fill(state,f2)
+
                 fills_rows.append({
-                    "ts": f.ts,
-                    "symbol": f.symbol,
-                    "qty": f.qty,
-                    "price": f.price,
-                    "fees": f.fees,
-                    "slippage": f.slippage,
+                    "ts": f2.ts,
+                    "symbol": f2.symbol,
+                    "qty": f2.qty,
+                    "price": f2.price,
+                    "fees": f2.fees,
+                    "slippage": f2.slippage,
                     "order_tag": getattr(f, "order_tag", None)
                 })
             pending_orders=[]
@@ -52,11 +66,15 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
         # no-future guarantee (guard empty first)
         if not hist.empty and hist.index.max() > ts:
             raise ValueError(f"Future leakage at {hist.index.max()} (ts={ts})")
+        
+
         # --- WARMUP BARS ---
         if i < cfg.warmup_bars:
             targets = {}   
         else:
             targets = strategy.on_bar(ts, data_upto_ts=hist, state=state) or {}
+
+
         # clip targets for logging + to match order sizing
         max_abs = getattr(cfg, "max_abs_weight", 1.0)
         clipped_targets = {s: float(targets.get(s, 0.0)) for s in symbols}
@@ -71,6 +89,8 @@ def run_positions_only(market: MarketData, strategy: Strategy, cfg: BacktestConf
             sym for sym in held
             if sym not in marks or (not np.isfinite(marks[sym])) or float(marks[sym]) <= 0.0
         ]
+
+
         if bad_held:
             # treat as "no trading possible" this bar
             current_orders = []

@@ -1,6 +1,4 @@
 """Accounting Transforms: Apply fills to PortfolioState and compute mark to market aggregates"""
-import numpy as np
-from btlib.core.enums import Side, OrderType, OrderStatus
 from btlib.core.order_types import PortfolioState, Position, Fill
 epsilon=1e-9
 def close_enough_zero(x: float) -> bool:
