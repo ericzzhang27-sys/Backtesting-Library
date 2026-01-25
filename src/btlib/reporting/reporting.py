@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from btlib.engine import close_enough_zero
 from typing import Any
 import pandas as pd
 
@@ -156,7 +156,7 @@ def trades_from_fills(fills_df: pd.DataFrame) -> pd.DataFrame:
     trade_rows: list[dict[str, Any]] = []
 
     def sgn(x: float) -> int:
-        if abs(x) <= 1e-12:
+        if close_enough_zero(x):
             return 0
         return 1 if x > 0 else -1
 
