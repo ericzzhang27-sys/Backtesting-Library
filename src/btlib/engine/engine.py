@@ -8,6 +8,7 @@ from btlib.engine.rebalance import targets_to_orders
 from btlib.execution import ExecutionModel, NextCloseExecution
 from btlib.engine.accounting import apply_fill
 from btlib.costs import SimpleBpsCost, CostModel
+from btlib.reporting.reporting import build_fills, build_ledger, build_orders, build_targets, trades_from_fills
 import numpy as np
 @dataclass
 class BacktestResults:
@@ -15,6 +16,7 @@ class BacktestResults:
     targets: pd.DataFrame
     orders: pd.DataFrame
     fills: pd.DataFrame
+    trades: pd.DataFrame
 def run_positions_only(
         market: MarketData, 
         strategy: Strategy, 
@@ -48,17 +50,18 @@ def run_positions_only(
                     fees, slippage = 0.0, 0.0
                 else:
                     fees, slippage= cost_model.compute(f)
-                f2= Fill(f.ts,f.symbol,f.qty,f.price,fees,slippage, getattr(f, "order_tag", None))
+                f2= Fill(f.ts,f.symbol,f.qty,f.price,fees,slippage, getattr(f, "tag", None))
                 state = apply_fill(state,f2)
 
                 fills_rows.append({
-                    "ts": f2.ts,
+                    "ts_fill": f2.ts,
                     "symbol": f2.symbol,
+                    "notional": abs(f2.qty * f2.price),
                     "qty": f2.qty,
                     "price": f2.price,
                     "fees": f2.fees,
                     "slippage": f2.slippage,
-                    "order_tag": getattr(f, "order_tag", None)
+                    "tag": getattr(f2, "tag", None)
                 })
             pending_orders=[]
         hist = market.slice_upto(ts)
@@ -100,7 +103,7 @@ def run_positions_only(
         pending_orders.extend(current_orders)
         for o in current_orders:
             orders_rows.append({
-                "ts": o.ts,
+                "ts_submit": o.ts,
                 "symbol": o.symbol,
                 "qty": o.qty,
                 "order_type": o.order_type,
@@ -134,21 +137,11 @@ def run_positions_only(
 
         
 
-    fills = pd.DataFrame(fills_rows)
-    if not fills.empty:
-        fills = fills.set_index("ts").sort_index()
-    else:
-        fills = pd.DataFrame(
-            columns=["symbol", "qty", "price", "fees", "slippage", "order_tag"]
-        ).set_index(pd.Index([], name="ts"))
+    ledger=build_ledger(ledger_rows)
+    targets= build_targets(targets_rows,symbols)
+    orders=build_orders(orders_rows)
+    fills=build_fills(fills_rows)
+    trades= trades_from_fills(fills)
 
-    ledger = pd.DataFrame(ledger_rows).set_index("ts")
-    targets = pd.DataFrame(targets_rows).set_index("ts")
-    orders = pd.DataFrame(orders_rows)
-    if not orders.empty:
-        orders = orders.set_index("ts").sort_index()
-    else:
-        orders = pd.DataFrame(columns=["symbol", "qty", "order_type", "tag"]).set_index(pd.Index([], name="ts"))
-
-    return BacktestResults(ledger=ledger,targets=targets, orders=orders,fills=fills)
+    return BacktestResults(ledger=ledger,targets=targets, orders=orders,fills=fills, trades=trades)
         
