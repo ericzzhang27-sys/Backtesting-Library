@@ -11,5 +11,5 @@ __all__ = [
     "run_positions_only",
     "BacktestResults",
     "close_enough_zero",
-    "apply_fill"
+    "apply_fill",
 ]

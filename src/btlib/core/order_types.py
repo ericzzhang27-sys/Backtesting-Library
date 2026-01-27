@@ -56,7 +56,7 @@ class Fill:
     price: float
     fees: float = 0.0
     slippage: float = 0.0
-    order_tag: str | None = None
+    tag: str | None = None
     exposure: float = field(init=False)
 
     def __post_init__(self) -> None:

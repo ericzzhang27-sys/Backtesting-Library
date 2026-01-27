@@ -132,7 +132,7 @@ def run_positions_only(
             "gross_exposure": gross,
             "net_exposure": net,
             "leverage": lev,
-            "n_positions": len(state.positions),
+            "n_positions": sum(1 for p in state.positions.values() if abs(p.qty) > 1e-12)
         })
 
         

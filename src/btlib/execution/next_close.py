@@ -25,7 +25,7 @@ class NextCloseExecution(ExecutionModel):
                     price=float(px),
                     fees=0.0,
                     slippage=0.0,
-                    order_tag=o.tag,
+                    tag=o.tag,
                 )
             )
         return fills

@@ -12,7 +12,6 @@ def sign(x:float) -> int:
     if x<0:
         return -1
 def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
-    
     if fill.symbol not in state.positions:
         state.positions[fill.symbol]=Position(fill.symbol,0,0) # Creates new position if not previously traded
     qty_0=state.positions[fill.symbol].qty
@@ -42,8 +41,10 @@ def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
         state.positions[fill.symbol].qty=0
         state.positions[fill.symbol].avg_price=0
     for sym in list(state.positions.keys()):
-        if state.positions[sym] == 0:
+        if close_enough_zero(state.positions[sym].qty):
             state.positions.pop(sym, None)
+
+    return state
 
 #Mark current state   
 def mark_to_market(state: PortfolioState, marks: dict[str,float]) -> dict:

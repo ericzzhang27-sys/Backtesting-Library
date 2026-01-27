@@ -1,5 +1,5 @@
 from __future__ import annotations
-from btlib.engine import close_enough_zero
+from btlib.engine.accounting import close_enough_zero
 from typing import Any
 import pandas as pd
 
