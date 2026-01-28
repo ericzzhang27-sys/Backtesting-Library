@@ -1,9 +1,9 @@
+from __future__ import annotations
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
 from typing import Optional
-from __future__ import annotations
-
+from .risk import max_drawdown
 """
 RETURNS: (EQUITY_f/EQUITY_i) - 1
 PERIODS PER YEAR: 252
@@ -83,7 +83,8 @@ def performance_summary(ledger: pd.DataFrame, rf: float=0.0, periods_per_year=25
     c= cagr(equity, periods_per_year)
     av= volatility(returns,periods_per_year)
     s=sharpe(returns,rf,periods_per_year)
-    return PerformanceMetrics(tot, c, av, s)
+    m=max_drawdown(equity)
+    return PerformanceMetrics(tot, c, av, s, m)
 
 @dataclass(frozen=True)
 class PerformanceMetrics:
