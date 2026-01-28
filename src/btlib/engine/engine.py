@@ -22,12 +22,15 @@ def run_positions_only(
         strategy: Strategy, 
         cfg: BacktestConfig, 
         execution_model: ExecutionModel | None = None, 
-        cost_model: CostModel | None = None) -> BacktestResults:
+        cost_model: CostModel | None = None,
+        verbose: bool = False,
+        log_every:int = 100) -> BacktestResults:
     
 
     if execution_model is None:
         execution_model = NextCloseExecution()
     ts0=market.timestamps()[0]
+    n = len(market.timestamps())
     state=PortfolioState(ts = ts0,
                          cash = cfg.initial_cash,
                          positions={}
@@ -39,7 +42,8 @@ def run_positions_only(
     fills_rows= []
     symbols=market.symbols()
     for i, ts in enumerate(market.timestamps()):
-
+        if verbose and (i == 0 or (i + 1) % log_every == 0 or (i + 1) == n):
+            print(f"Backtest progress: {i+1}/{n} ({(i+1)/n:.1%})")
         marks = market.get_price_dict(ts)
         
         
