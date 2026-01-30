@@ -5,7 +5,11 @@ import numpy as np
 from btlib.costs.base import CostModel
 from btlib.core.order_types import Fill
 
-@dataclass(frozen=True)
+"""
+A simple linear cost model that calculates fees and slippage as a
+linearly increasing percentage of the notional value of each fill
+"""
+@dataclass(frozen = True)
 class SimpleBpsCost(CostModel):
     fees_bps: float = 0.0
     slippage_bps: float = 0.0

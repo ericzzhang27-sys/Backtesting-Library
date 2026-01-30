@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-
+"""
+Initial configuration settings of backtest
+"""
 @dataclass
 class BacktestConfig:
     initial_cash: float = 100_000

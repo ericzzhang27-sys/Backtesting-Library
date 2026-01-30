@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from btlib.core.order_types import Fill
 
-
+"""Base Class for Cost Models"""
 class CostModel(ABC):
     @abstractmethod
     def compute(self, fill: Fill)-> tuple[float, float]:

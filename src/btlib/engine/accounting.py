@@ -1,11 +1,14 @@
 """Accounting Transforms: Apply fills to PortfolioState and compute mark to market aggregates"""
 from btlib.core.order_types import PortfolioState, Position, Fill
-epsilon=1e-9
+epsilon=1e-12
+
+
+# Round down floating point precision error based on epsilon
 def close_enough_zero(x: float) -> bool:
-    return abs(x)<=epsilon
-        
+    return abs(x) <= epsilon
+# Check sign of position quantity  
 def sign(x:float) -> int:
-    if x==0 or close_enough_zero(x):
+    if x == 0 or close_enough_zero(x):
         return 0
     if x>0:
         return 1
@@ -13,7 +16,7 @@ def sign(x:float) -> int:
         return -1
 def apply_fill(state: PortfolioState,fill: Fill) -> PortfolioState:
     if fill.symbol not in state.positions:
-        state.positions[fill.symbol]=Position(fill.symbol,0,0) # Creates new position if not previously traded
+        state.positions[fill.symbol] = Position(fill.symbol,0,0) # Creates new position if not previously traded
     qty_0=state.positions[fill.symbol].qty
     price_0=state.positions[fill.symbol].avg_price
     trade_cash=fill.qty*fill.price

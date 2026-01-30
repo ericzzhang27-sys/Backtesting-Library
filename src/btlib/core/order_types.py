@@ -1,16 +1,18 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
-# Force project root (the folder that contains /core) onto sys.path
 import pandas as pd
 import numpy as np
-from btlib.core.enums import Side, OrderType, TimeInForce, OrderStatus
+from btlib.core import Side, OrderType, TimeInForce, OrderStatus
 
 
 def require_finite(name: str, value: float) -> None:
         """Ensure that a given float value is finite (not NaN or infinite)."""
         if not np.isfinite(value):
             raise ValueError(f"{name} must be a finite number, got {value}")
+"""
+Signals from strategy generate order objects
+"""
 @dataclass(frozen=True)
 class Order:
     ts: pd.Timestamp
@@ -47,7 +49,9 @@ class Order:
         
 
         
-
+"""
+Orders are turned into fills on the next bar
+"""
 @dataclass(frozen=True)
 class Fill:
     ts: pd.Timestamp
@@ -88,7 +92,9 @@ class Fill:
         object.__setattr__(self, "exposure", notional_exposure)
 
 
-
+"""
+Once orders are filled, they are turned into positions and added to the portfolio
+"""
 @dataclass
 class Position:
     symbol: str
@@ -109,8 +115,10 @@ class Position:
         require_finite("qty", float(self.qty))
         require_finite("avg_price", float(self.avg_price))
         return (float(current_price) - float(self.avg_price)) * float(self.qty)
-    
-    
+
+"""
+Portfolio containing cash, dict of positions, and other stats at timestamp.
+"""
 @dataclass
 class PortfolioState:
     ts: pd.Timestamp
@@ -128,6 +136,7 @@ class PortfolioState:
         
         
     def get_position(self, symbol: str) -> Position:
+        """Gets the current position of a stock if in the portfolio"""
         if not isinstance(symbol, str) or not symbol.strip():
             raise ValueError("symbol must be a non-empty string")
 
@@ -139,7 +148,7 @@ class PortfolioState:
         
     def equity(self, mark_prices: dict[str,float]) -> float:
         """Calculate the total equity of the portfolio based on the current market price."""        
-        equity=self.cash
+        equity = self.cash
         for symbol, position in self.positions.items():
             current_price=mark_prices.get(symbol)
             if current_price is None:
@@ -148,6 +157,7 @@ class PortfolioState:
         return equity
     
     def gross_exposure(self, mark_prices: dict[str, float]) -> float:
+        """Calculates gross exposure based on current market prices"""
         total = 0.0
         for symbol, position in self.positions.items():
             if symbol not in mark_prices:
@@ -175,12 +185,11 @@ class PortfolioState:
         leverage = gross_exposure / equity
         return leverage
     def unrealized_pnl(self, mark_prices: dict[str, float]):
-        total=0.0
+        """Calculates current pnl of a position based on market prices"""
+        total = 0.0
         for symbol, position in self.positions.items():
             if symbol not in mark_prices:
                 raise KeyError(f"Missing mark price for {symbol}")
-            total+=position.unrealized_pnl(mark_prices[symbol])
+            total += position.unrealized_pnl(mark_prices[symbol])
         return total
-    def realized_pnl(self) -> float:
-        return sum(pos.realized_pnl for pos in self.positions.values())
 

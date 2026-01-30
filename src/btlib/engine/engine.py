@@ -10,8 +10,12 @@ from btlib.engine.accounting import apply_fill
 from btlib.costs import SimpleBpsCost, CostModel
 from btlib.reporting.reporting import build_fills, build_ledger, build_orders, build_targets, trades_from_fills
 import numpy as np
+
 @dataclass
 class BacktestResults:
+    """
+    Stores results of backtest in dataframes
+    """
     ledger: pd.DataFrame
     targets: pd.DataFrame
     orders: pd.DataFrame
@@ -25,7 +29,31 @@ def run_positions_only(
         cost_model: CostModel | None = None,
         verbose: bool = False,
         log_every:int = 100) -> BacktestResults:
+    """
+     Runs a simulation of a backtest using the provided market data and trading strategy.
+
+    The function simulates the progression of a portfolio's state over time, handling
+    order generation from the strategy, order execution via an execution model,
+    cost calculations, and logging of various metrics. It ensures no future
+    data leakage to the strategy's decision-making process.
     
+    :param market: Market prices for each symbol at each timestamp
+    :type market: MarketData
+    :param strategy: Strategy that generates weights based on signal
+    :type strategy: Strategy
+    :param cfg: Config settings of the backtest
+    :type cfg: BacktestConfig
+    :param execution_model: Determine what execution model will be used during the backtest
+    :type execution_model: ExecutionModel | None
+    :param cost_model: Determine what cost model will be used during the backtest
+    :type cost_model: CostModel | None
+    :param verbose: Toggles progress bar during program runtime
+    :type verbose: bool
+    :param log_every: How often progress is reported
+    :type log_every: int
+    :return: Computes a summary of all calculated stats from the backtest and combines them into a BacktestResults dataclass
+    :rtype: BacktestResults
+    """
 
     if execution_model is None:
         execution_model = NextCloseExecution()

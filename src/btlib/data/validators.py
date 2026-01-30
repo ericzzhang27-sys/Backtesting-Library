@@ -1,4 +1,9 @@
 import pandas as pd
+
+"""
+Ensure prices and data are finite, are not duplicates, monotonic, numeric, etc
+Strict: Raise on failure
+"""
 def validate_price_frame(df: pd.DataFrame) -> None:
     if not isinstance(df,pd.DataFrame):
         raise TypeError("Price data must be a pandas DataFrame")
@@ -17,5 +22,6 @@ def validate_price_frame(df: pd.DataFrame) -> None:
 
     if df.empty:
         raise ValueError("Price data DataFrame is empty")
+
 def require_columns(df: pd.DataFrame, required: list[str])-> None:
     pass
